@@ -1,3 +1,0 @@
-Total parameters: 606852
-Start training... 
-Epoch: 001, Train Loss: 4.5134, Train SupLoss: 4.4397, Train UnsupLoss: 0.7369, Train UnsupAcc: 0.0000, Train RMSE: 8.5435, Train MAPE: 0.1329, Valid Loss: 3.4310, Valid RMSE: 6.5899, Valid MAPE: 0.0975, Train Neg: 0.0000, Input Diff: 0.0073, Train Time: 78.1207/epoch, Valid Time: 2.3431/epoch 
