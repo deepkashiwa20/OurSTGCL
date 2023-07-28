@@ -1,4 +1,5 @@
 import os
+import logging
 import time
 import util
 import random
@@ -43,13 +44,13 @@ if args.method == 'graph':
     assert args.em_t or args.im_t or args.ts_t or args.ism_t, 'Please specify at least one data augmentations'
 
 if args.dataset == 'd4':
-    adj_data = '../data/adj_mx_04.pkl'
-    input_data = '../data/PEMS-04'
+    adj_data = f'../data/adj_mx_04.pkl'
+    input_data = f'../data/PEMS-04'
     num_nodes = 307
     embed_dim = 10
 elif args.dataset == 'd8':
-    adj_data = '../data/adj_mx_08.pkl'
-    input_data = '../data/PEMS-08'
+    adj_data = f'../data/adj_mx_08.pkl'
+    input_data = f'../data/PEMS-08'
     num_nodes = 170
     embed_dim = 2
 elif args.dataset == 'METRLA':
@@ -66,9 +67,31 @@ else:
     pass # including more datasets in the future  
 
 dir_name = os.path.dirname(os.path.abspath(__file__))
-save = os.path.join(dir_name, "..", 'save', args.dataset)
-if not os.path.exists(save):
-    os.makedirs(save)
+model_name = 'STGCL_AGCRN'
+timestring = time.strftime('%Y%m%d%H%M%S', time.localtime())
+path = os.path.join(dir_name, "..", f'save/{args.dataset}_{model_name}_{timestring}')
+logging_path = f'{path}/{model_name}_{timestring}_logging.txt'
+modelpt_path = f'{path}/{model_name}_{timestring}.pt'
+if not os.path.exists(path):
+    os.makedirs(path)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(level = logging.INFO)
+class MyFormatter(logging.Formatter):
+    def format(self, record):
+        spliter = ' '
+        record.msg = str(record.msg) + spliter + spliter.join(map(str, record.args))
+        record.args = tuple() # set empty to args
+        return super().format(record)
+formatter = MyFormatter()
+handler = logging.FileHandler(logging_path, mode='a')
+handler.setLevel(logging.INFO)
+handler.setFormatter(formatter)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+console.setFormatter(formatter)
+logger.addHandler(handler)
+logger.addHandler(console)
     
 
 def set_seed(seed):
@@ -89,12 +112,12 @@ scaler = dataloader['scaler']
 
 model = AGCRN(num_nodes, embed_dim, args.in_dim, args.out_dim, args.rnn_units, args.num_layers, args.cheb_k, args.horizon)
 nparam = sum([p.nelement() for p in model.parameters()])
-print('Total parameters:', nparam)
+logger.info('Total parameters:', nparam)
 
 engine = trainer(device, model, adj_m, scaler, args.method, args.fn_t, args.em_t, args.im_t, args.ts_t, args.ism_t, args.ism_e, args.tempe, args.lam, args.lrate)
 
 
-print('Start training...')
+logger.info('Start training...')
 his_loss =[]
 train_time = []
 val_time = []
@@ -156,17 +179,17 @@ for i in range(1, args.epochs + 1):
     his_loss.append(mvalid_loss)
     
     log = 'Epoch: {:03d}, Train Loss: {:.4f}, Train SupLoss: {:.4f}, Train UnsupLoss: {:.4f}, Train UnsupAcc: {:.4f}, Train RMSE: {:.4f}, Train MAPE: {:.4f}, Valid Loss: {:.4f}, Valid RMSE: {:.4f}, Valid MAPE: {:.4f}, Train Neg: {:.4f}, Input Diff: {:.4f}, Train Time: {:.4f}/epoch, Valid Time: {:.4f}/epoch'
-    print(log.format(i, mtrain_loss, mtrain_sloss, mtrain_uloss, mtrain_acc, mtrain_rmse, mtrain_mape, mvalid_loss, mvalid_rmse, mvalid_mape, mtrain_neg, minput_diff, (t2 - t1), (s2 - s1)))
+    logger.info(log.format(i, mtrain_loss, mtrain_sloss, mtrain_uloss, mtrain_acc, mtrain_rmse, mtrain_mape, mvalid_loss, mvalid_rmse, mvalid_mape, mtrain_neg, minput_diff, (t2 - t1), (s2 - s1)))
 
     if min_loss > mvalid_loss:
-        torch.save(engine.model.state_dict(), save + 'epoch_' + str(i) + '_' + str(round(mvalid_loss, 2)) + '.pth')
+        torch.save(model.state_dict(), modelpt_path)
         min_loss = mvalid_loss
 
 
 bestid = np.argmin(his_loss)
-engine.model.load_state_dict(torch.load(save + 'epoch_' + str(bestid + 1) + '_' + str(round(his_loss[bestid], 2)) + '.pth'))
+engine.model.load_state_dict(torch.load(modelpt_path))
 log = 'Best Valid MAE: {:.4f}'
-print(log.format(round(his_loss[bestid], 4)))
+logger.info(log.format(round(his_loss[bestid], 4)))
 
 valid_loss = []
 valid_mape = []
@@ -183,7 +206,7 @@ mvalid_loss = np.mean(valid_loss)
 mvalid_mape = np.mean(valid_mape)
 mvalid_rmse = np.mean(valid_rmse)
 log = 'Recheck Valid MAE: {:.4f}, Valid RMSE: {:.4f}, Valid MAPE: {:.4f}'
-print(log.format(np.mean(mvalid_loss), np.mean(mvalid_rmse), np.mean(mvalid_mape)))
+logger.info(log.format(np.mean(mvalid_loss), np.mean(mvalid_rmse), np.mean(mvalid_mape)))
 
 outputs = []
 for iter, (x, y) in enumerate(dataloader['test_loader'].get_iterator()):
@@ -207,7 +230,7 @@ for k in range(args.horizon):
     real = realy[:,:,k]
     metrics = util.metric(pred, real)
     log = 'Horizon {:d}, Test MAE: {:.4f}, Test RMSE: {:.4f}, Test MAPE: {:.4f}'
-    print(log.format(k + 1, metrics[0], metrics[2], metrics[1]))
+    logger.info(log.format(k + 1, metrics[0], metrics[2], metrics[1]))
     test_loss.append(metrics[0])
     test_mape.append(metrics[1])
     test_rmse.append(metrics[2])
@@ -218,10 +241,10 @@ mtest_mape = np.mean(test_mape)
 mtest_rmse = np.mean(test_rmse)
 
 log = 'Average Test MAE: {:.4f}, Test RMSE: {:.4f}, Test MAPE: {:.4f}'
-print(log.format(mtest_loss, mtest_rmse, mtest_mape))
+logger.info(log.format(mtest_loss, mtest_rmse, mtest_mape))
 res += [mtest_loss, mtest_rmse, mtest_mape]
 res = [round(r, 4) for r in res]
-print(res)
+logger.info(res)
 
-print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
-print("Average Inference Time: {:.4f} secs/epoch".format(np.mean(val_time)))
+logger.info("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
+logger.info("Average Inference Time: {:.4f} secs/epoch".format(np.mean(val_time)))
