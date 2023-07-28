@@ -11,8 +11,8 @@ from engine import trainer
 torch.set_num_threads(3)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--device', type=str, default='cuda:7', help='device name')
-parser.add_argument('--dataset', type=str, default='d4', help='dataset name')
+parser.add_argument('--device', type=str, default='cuda:0', help='device name')
+parser.add_argument('--dataset', type=str, choices=['METRLA', 'PEMSBAY', 'd4', 'd8'], default='PEMSBAY', help='which dataset to run')
 parser.add_argument('--in_dim', type=int, default=1, help='input dimension')
 parser.add_argument('--out_dim', type=int, default=1, help='output dimension')
 parser.add_argument('--rnn_units', type=int, default=64, help='hidden dimension')
@@ -33,7 +33,7 @@ parser.add_argument('--lam', type=float, default=0.1, help='loss lambda')
 parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 parser.add_argument('--lrate', type=float, default=0.003, help='learning rate')
 parser.add_argument('--epochs', type=int, default=100, help='epochs')
-parser.add_argument('--seed',type=int, default=0, help='random seed')
+parser.add_argument('--seed',type=int, default=100, help='random seed')
 args = parser.parse_args()
 print(args) 
 
@@ -52,10 +52,23 @@ elif args.dataset == 'd8':
     input_data = '../data/PEMS-08'
     num_nodes = 170
     embed_dim = 2
-save = 'save'  
+elif args.dataset == 'METRLA':
+    adj_data = f'../{args.dataset}/adj_mx.pkl'
+    input_data = f'../{args.dataset}'
+    num_nodes = 207
+    embed_dim = 8
+elif args.dataset == 'PEMSBAY':
+    adj_data = f'../{args.dataset}/adj_mx_bay.pkl'
+    input_data = f'../{args.dataset}'
+    num_nodes = 325
+    embed_dim = 8 
+else:
+    pass # including more datasets in the future 
+
+dir_name = os.path.dirname(os.path.abspath(__file__))
+save = os.path.join(dir_name, "..", 'save', args.dataset)
 if not os.path.exists(save):
     os.makedirs(save)
-save += '/'
     
 
 def set_seed(seed):
