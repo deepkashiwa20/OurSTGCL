@@ -15,7 +15,9 @@ python generate_training_data.py
 ```
 ##### PEMSBAY
 ```
-unzip PEMSBAY/*.zip
+cd PEMSBAY
+unzip *.zip
+cd ..
 python generate_training_data.py --dataset PEMSBAY --output_dir PEMSBAY/ --traffic_df_filename PEMSBAY/pems-bay.h5
 ```
 
