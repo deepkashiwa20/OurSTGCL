@@ -36,7 +36,6 @@ parser.add_argument('--lrate', type=float, default=0.003, help='learning rate')
 parser.add_argument('--epochs', type=int, default=100, help='epochs')
 parser.add_argument('--seed',type=int, default=100, help='random seed')
 args = parser.parse_args()
-print(args) 
 
 # sanity check
 assert args.method in ['pure', 'graph'], 'Please specify the type of methods'
@@ -112,7 +111,9 @@ scaler = dataloader['scaler']
 
 model = AGCRN(num_nodes, embed_dim, args.in_dim, args.out_dim, args.rnn_units, args.num_layers, args.cheb_k, args.horizon)
 nparam = sum([p.nelement() for p in model.parameters()])
+logger.info(args)
 logger.info('Total parameters:', nparam)
+
 
 engine = trainer(device, model, adj_m, scaler, args.method, args.fn_t, args.em_t, args.im_t, args.ts_t, args.ism_t, args.ism_e, args.tempe, args.lam, args.lrate)
 
