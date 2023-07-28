@@ -69,7 +69,7 @@ else:
 dir_name = os.path.dirname(os.path.abspath(__file__))
 model_name = 'STGCL_AGCRN'
 timestring = time.strftime('%Y%m%d%H%M%S', time.localtime())
-path = os.path.join(dir_name, "..", f'save/{args.dataset}_{model_name}_{timestring}')
+path = os.path.join(dir_name, "..", f'save/{args.dataset}_{model_name}_{args.method}_{timestring}')
 logging_path = f'{path}/{model_name}_{timestring}_logging.txt'
 modelpt_path = f'{path}/{model_name}_{timestring}.pt'
 if not os.path.exists(path):
