@@ -35,8 +35,7 @@ parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 parser.add_argument('--lrate', type=float, default=0.003, help='learning rate')
 parser.add_argument('--epochs', type=int, default=100, help='epochs')
 parser.add_argument('--seed',type=int, default=100, help='random seed')
-args = parser.parse_args()
-# print(args) 
+args = parser.parse_args() 
 
 # sanity check
 assert args.method in ['pure', 'node'], 'Please specify the type of methods'
@@ -188,7 +187,7 @@ for i in range(1, args.epochs + 1):
 
 
 bestid = np.argmin(his_loss)
-engine.model.load_state_dict(torch.load(save + 'epoch_' + str(bestid + 1) + '_' + str(round(his_loss[bestid], 2)) + '.pth'))
+engine.model.load_state_dict(torch.load(modelpt_path))
 log = 'Best Valid MAE: {:.4f}'
 logger.info(log.format(round(his_loss[bestid], 4)))
 
