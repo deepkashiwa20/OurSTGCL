@@ -1,3 +1,4 @@
 *.npz
-save
+*.pt
 PEMSBAY/pems-bay.h5
+*.pt
